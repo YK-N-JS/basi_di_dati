@@ -1,0 +1,551 @@
+% !TeX spellcheck = it_IT
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{blindtext}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{longtable}
+\hypersetup{
+	colorlinks,
+	citecolor=black,
+	filecolor=black,
+	linkcolor=black,
+	urlcolor=black
+}
+\usepackage{color}
+\usepackage{listings}
+\lstset{
+	literate=%
+	{à}{{\`a}}1
+}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+	language=SQL,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=left,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3
+}
+\title{BASE DI DATI PER KALEN DARIO}
+\author{Giulia Stazio, Davide Tonziello}
+\date{Luglio 2025}
+
+\begin{document}
+	
+	\maketitle
+	\tableofcontents
+	\pagebreak
+	
+	\section{Introduzione}
+	
+	Questo è lo sviluppo di una base di dati per un'applicazione chiamata 'Kalen Dario'.
+	In questa applicazione un utente potrà gestire i propri impegni sotto forma di ToDo, organizzandoli in Bacheche apposite, con la possibilità di modificarli e condividerli con altri utenti.
+	
+	\section{Specifica dei requisiti}
+	In seguito sarà riportata in corsivo la traccia fornita come assignment: \linebreak
+	
+	\textit {Si sviluppi un sistema informativo, composto da una base di dati relazionale e da un applicativo Java dotato di GUI (Swing) che consente di tenere traccia delle attività personali da svolgere (nel seguito chiamate semplicemente “ToDo”), ispirato al software Trello.
+	Il software deve consentire all'utente di organizzare e gestire le proprie attività personali in modo efficiente, utilizzando un'interfaccia intuitiva e flessibile.
+	L’utente entra nel sistema specificando la propria login e password, che devono essere univoche.} \linebreak
+	Si suppone che soltanto il nome utente debba essere univoco. \linebreak[2]
+	
+	\textit{I ToDo sono organizzati in tre bacheche (ogni bacheca ha un titolo e una descrizione), che possono essere create, modificate ed eliminate. I titoli delle tre bacheche sono Università, Lavoro e Tempo Libero.} \linebreak
+	Si suppone che Università, Lavoro e Tempo libero siano tre formati di bacheche. In fase di creazione di una bacheca, se non specificato, il formato sarà impostato come Default(un quarto formato). \linebreak[2]
+	
+	\textit{I ToDo all’interno di una bacheca sono ordinati, secondo un ordine modificabile dall’utente. L’utente può creare, modificare ed eliminare ToDo, così come può spostare un ToDo da una bacheca all’altra oppure cambiarne la posizione all’interno della bacheca.
+	Ogni ToDo ha un titolo e una data di scadenza, un link ad una URL correlata all’attività, una descrizione dettagliata e un’immagine. Tutti questi elementi sono opzionali e possono essere modificati in qualsiasi momento.} \linebreak
+	Gli attributi saranno quindi tutti riutilizzabili all'interno di diversi ToDo, inoltre verrà reso possibile modificare l'ordine dei ToDo all'interno di una bacheca tramite funzioni di sort, quali Alfabetico(titolo), Data di scadenza o stato di completamento. Inoltre sarà possibile scegliere l'immagine tra un insieme di immagini predefinite e si terrà traccia all'interno della base di dati soltanto dell'indice di questa. \linebreak[2]
+	
+	\textit{Ogni ToDo può contenere inoltre una lista di altri utenti che condividono quel ToDo. In pratica quel ToDo comparirà nella bacheca corrispondente di ognuno di tali utenti . Ad esempio, se Pippo, Pluto e Paperino condividono un ToDo, ed esso si trova nella bacheca Tempo Libero di Pippo, allora esso comparirà anche nelle bacheche Tempo Libero di Pluto e Paperino. Ogni utente può leggere chi sono gli altri utenti con i quali il ToDo è condiviso. L’autore del ToDo può aggiungere o eliminare condivisioni.} \linebreak
+	Visto che le bacheche possono essere create, eliminate e modificate, non è detto che utenti diversi abbiano tutte le bacheche in comune. Pertanto in fase di condivisione di un ToDo, questo verrà inserito nella bacheca di Dafault del ricevente e sarà quest'ultimo a poterlo spostare. \linebreak[2]
+	
+	\textit{Infine il ToDo ha un colore di sfondo che viene mostrato nell’interfaccia grafica. L’utente deve poter scrivere e modificare ognuna di tali informazioni. Un ToDo può essere settato come completato oppure come non completato (di default è non completato).} \linebreak
+	Del colore di sfondo, proprio come per l'immagine, si terrà traccia solo dell'indice correlato al colore selezionato. \linebreak[2]
+	
+	\textit{Il sistema deve poter fornire su richiesta dell’utente, l’elenco di ToDo in scadenza nella giornata odierna, oppure quelli in scadenza entro un certo giorno specificato dall’utente. Il sistema deve consentire anche la ricerca per nome o per titolo dei ToDo.
+	Per i ToDo scaduti, il sistema mostra il nome del ToDo in rosso, per evidenziare il superamento della scadenza prevista.} \linebreak
+	Saranno implementate funzioni per elencare ToDo in scadenza in una giornata specifica. Per quanto riguarda i ToDo scaduti, il colore verrà impostato automaticamente a rosso, sovrascrivendo la scelta dell'utente(il rosso non sarà fra le opzioni di selezione dell'utente).
+	\pagebreak
+	
+	\section{Progettazione concettuale}
+
+
+	Il class diagram di partenza.
+	
+	Un utente può creare un numero arbitrario di ToDo e condividerli con altri utenti tramite la relazione placement.
+	Una bacheca può contenere un numero arbitrario di ToDo e i ToDo possono appartenere a più bacheche contemporaneamente, ma non meno di una.
+
+	\begin{figure}[h]
+		\centering
+		\includegraphics[width=1.3\linewidth]{"Diagramma non ristrutturato"}
+		\caption[Diagramma concettuale]{diagramma concettuale di partenza}
+		\label{fig:diagramma-non-ristrutturato}
+	\end{figure}
+	
+	\pagebreak
+	\section{Ristrutturazione}
+		\subsection{Analisi delle ridondanze}
+		
+		L'attributo \textit{Expired} è una ridondanza in quanto è calcolabile tramite \textit{Complete{\_}By{\_}Date} e la data corrente, ma è utile da tenere per evitare di dover fare controlli su date ogni volta che si accede al ToDo. \\
+		Non sono presenti altre ridondanze. \\
+		
+		Da notare che la relazione \textit{Ownership ToDo} non è una ridondanza in quanto in una Bacheca sono presenti i ToDo visualizzabili dal suo proprietario, anche se non ne è il creatore.
+		
+		\subsection{Eliminazione di: generalizzazioni, attributi composti e multi valore}
+		
+		La generalizzazione disgiunta totale in bacheca può essere gestita portando i figli nel padre ed inserendo un attributo \textit{Format}. In fase di creazione di una bacheca, laddove non specificata, il formato sarà impostato come Default.
+		Non sono presenti altre generalizzazioni. \linebreak[2]
+		
+		L'attributo composto Complete{\_}By{\_}Date è rappresentabile con il tipo DATE di SQL.
+		Non sono presenti altri attributi composti. \linebreak[2]
+		
+		Non sono presenti attributi multi valore. \linebreak[2]
+		
+		\subsection{Partizione e accorpamento di entità e associazioni}
+		
+		Non è stato ritenuto necessario effettuare partizioni o accorpamenti.
+		
+		\subsection{Scelta degli identificatori principali}
+		
+		Per l'entità User è stato scelto l'attributo Username.
+		
+		Per le entità Bacheca e ToDo sono stati scelti degli ID in quanto tutti gli attributi presenti devono poter essere riutilizzati.
+		
+		Ad esempio possono esistere Bacheche con lo stesso Title, Description, ecc. Lo stessa cosa vale per un ToDo.
+		
+		\subsection{Diagramma ristrutturato}	
+		
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=1.3\linewidth]{"Diagramma ristrutturato"}
+			\label{fig:diagramma-ristrutturato}
+		\end{figure}
+		\pagebreak
+		
+		\subsection{Dizionario classi}
+		\begin{center}
+			\begin{longtable}{c c c}
+				\hline
+				\textbf{Nome classe} & \textbf{Descrizione} & \textbf{Attributi} \\
+				\hline
+				User & Un utente dell'applicazione & \parbox{7cm}{\begin{itemize}
+					\item [-] Username(varchar(100)): Il nome scelto dall'utente
+					\item [-] Password(varchar(100)): La password dell'account
+					\item [-] Num{\_}Max{\_}Bacheche(int): Il numero massimo di bacheche che si possono avere contemporaneamente
+				\end{itemize}} \\
+				\hline
+				Bacheca & Una bacheca di un utente & \parbox{7cm}{\begin{itemize}
+						\item [-] ID(int): L'identificativo univoco di una bacheca
+						\item [-] Title(varchar(100)): Il titolo della bacheca
+						\item [-] Description(varchar(1000)): La descrizione della bacheca
+						\item [-] Format(varchar(12)): Il formato della bacheca. A seconda del formato, le bacheche si comporteranno in modo diverso nell'interfaccia
+						\item [-] IsDefault(boolean): Indica se la bacheca è quella predefinita
+				\end{itemize}} \\
+				\hline
+				ToDo & I Todo creati dagli utenti & \parbox{7cm}{\begin{itemize}
+						\item [-] ID(int): L'identificativo univoco di un ToDo
+						\item [-] Title(varchar(100)): Il titolo del ToDo
+						\item [-] URL(varchar(2048)): Un eventuale URL relativo al ToDo
+						\item [-] Description(varchar(1000)): La descrizione del ToDo
+						\item [-] Color(int): Un intero che indica quale colore è stato scelto come Background del ToDo (ai colori disponibili sono associati dei numeri da 0 a 4)
+						\item [-] Icon(int): Un intero che indica quale icona è associata al ToDo. Le icone dei file png numerati che si trovano in una apposita cartella
+						\item [-] Complete{\_}By{\_}Date(date): La data entro la quale deve (o doveva) essere stato completato il ToDo
+						\item [-] Completed(boolean): Un flag che indica se il ToDo è stato completato
+						\item [-] Expired(boolean): Un flag che indica se il ToDo è scaduto
+				\end{itemize}} \\
+				\hline
+			\end{longtable}
+		\end{center}
+		\pagebreak
+		
+		\subsection{Dizionario relazioni}
+		\begin{center}
+			\centering
+			\begin{longtable}{c c c}
+				\hline
+				\textbf{Nome Relazione} & \textbf{Descrizione} & \textbf{Attributi} \\
+				\hline
+				Placement & \parbox{4cm}{La presenza di un ToDo in una bacheca} & \parbox{7cm}{\begin{itemize}
+						\item [-] IDBacheca(int): L'identificativo della bacheca in cui si trova il ToDo referenziato da IDToDo
+						\item [-] IDToDo(int): L'identificativo del ToDo contenuto nella bacheca referenziata da IDBacheca \\
+				\end{itemize}} \\
+				\hline
+				Ownership Bacheca & La proprietà di una bacheca & \parbox{7cm}{\begin{itemize}
+					\item [-] Username(varchar(100)): Il proprietario della bacheca
+					\item [-] IDBacheca(int): La bacheca posseduta
+				\end{itemize}} \\
+				\hline
+				Ownership ToDo & La proprietà di un ToDo & \parbox{7cm}{\begin{itemize}
+					\item [-] Username(varchar(100)): Il proprietario del ToDo
+					\item [-] IDToDo(int): Il ToDo posseduto
+				\end{itemize}} \\
+				\hline
+			\end{longtable}
+		\end{center}
+		
+		\pagebreak
+		\section{Progettazione logica (modello relazionale)}
+		Le relazioni \textit{Ownership Bacheca} e \textit{Ownership ToDo} sono relazioni 1:N e verranno implementate con una chiave esterna(Owner) inserita rispettivamente nelle tabelle Bacheca e ToDo.
+		La relazione \textit{Placement} invece, essendo N:N, necessita di una tabella a sé stante. \linebreak[2]
+		
+		\textbf{ENTITÀ:}
+		
+		\textbf{USER}:(\underline{UserName}, Password, Num{\_}Max{\_}Bacheche) \linebreak[2]
+		
+		\textbf{BACHECA}:(\underline{ID}, Description, Owner, Title, Format) \\
+		BACHECA.Owner $\rightarrow$ USER.UserName \linebreak[2]
+		
+		\textbf{TODO}:(\underline{ID}, URL, Title, Description, Owner, Icon, Color, Complete{\_}By{\_}Date) \\
+		TODO.Owner $\rightarrow$ USER.UserName \linebreak[2]
+		
+		\textbf{RELAZIONI:}
+		
+		\textbf{PLACEMENT}:(\underline{IDBacheca, IDToDo}) \\
+		PLACEMENT.IDBacheca $\rightarrow$ BACHECA.ID \\
+		PLACEMENT.IDToDo $\rightarrow$ TODO.ID
+		
+		\pagebreak
+		\section{Progettazione fisica}
+		
+		Di seguito è presente il codice per la creazione e gestione del DataBase, alcune considerazioni:
+		
+		-Vengono utilizzate le " per termini considerati "reserved" in SQL \\
+		-Per la creazione di funzioni e trigger è utile inserire \textit{OR REPLACE} dopo \textit{CREATE} per facilitare l'apporto di eventuali modifiche in futuro, riutilizzando la stessa signature
+		
+		\subsection{Creazione delle tabelle}
+		
+		\hfill \linebreak[4]
+		 Tabella USER:
+		
+			\begin{lstlisting}
+			CREATE TABLE "user"
+			(
+			UserName varchar(100) PRIMARY KEY, 
+			"Password" varchar(100) NOT NULL,
+			Num_Max_Bacheche INTEGER DEFAULT 10
+			)		
+		\end{lstlisting}
+		
+		\hfill \linebreak[4]
+		
+		Tabella BACHECA:
+		
+			\begin{lstlisting}
+			CREATE TABLE bacheca
+			(
+			"ID" int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+			Title varchar(100),
+			Description varchar(1000),
+			"Owner" varchar(100) REFERENCES "user"(UserName) ON DELETE CASCADE,
+			Format varchar(12) DEFAULT 'Default',
+			IsDefault boolean DEFAULT false
+			)
+		\end{lstlisting}
+		Il cascade su "Owner" fa in modo che all'eliminazione di una tupla dalla tabella User, vengano eliminate anche tutte le tabelle associate a quell'utente
+		
+		\pagebreak
+		
+		Tabella TODO:
+		
+			\begin{lstlisting}
+			CREATE TABLE todo
+			(
+			"ID" int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+			Title varchar(100),
+			URL varchar(256),
+			Description varchar(1000),
+			"Owner" varchar(100) REFERENCES "user"(UserName) ON DELETE CASCADE,
+			Icon int DEFAULT 0,
+			Color int DEFAULT 0,
+			Complete_By_Date date,
+			Completed boolean DEFAULT false,
+			Expired boolean DEFAULT false
+			)
+		\end{lstlisting}
+		Il cascade su "Owner" qui serve per fare in modo che alla rimozione di un Utente dalla tabella User vengano eliminati anche tutti i ToDo creati da esso
+		\linebreak[6]
+		
+		Tabella PLACEMENT:
+			\begin{lstlisting}
+			CREATE TABLE placement
+			(
+			IDBacheca int REFERENCES bacheca("ID") ON DELETE CASCADE,
+			IDToDo int REFERENCES todo("ID") ON DELETE CASCADE,
+			PRIMARY KEY (IDBacheca, IDToDo)
+			)
+		\end{lstlisting}
+		Il cascade su IDBacheca fa in modo che all'eliminazione di una bacheca, vengano rimosse anche le tuple della tabella placement che la referenziano.
+		La stessa cosa vale per il cascade su IDToDO e l'eliminazione di un ToDo.
+		Da notare che dopo l'eliminazione di una bacheca, non vengono rimossi automaticamente i ToDo associati dalla tabella ToDo. Di questa operazione, si occuperà un trigger apposito.
+		
+		\subsection{Constraints}
+		
+		I constraint sono stati implementati in fase di creazione delle tabelle con le operazioni CASCADE, vincoli di integrità (predefiniti) e trigger.
+		
+		
+		\subsection{Procedures}
+		
+		La seguente procedura permette di modificare la bacheca di default in cui vengono inseriti i ToDo condivisi dagli altri utenti
+			\begin{lstlisting}
+			CREATE OR REPLACE PROCEDURE changeDeafultBacheca
+			(idnewdefault bacheca."ID"%TYPE, proprietario bacheca."Owner"%TYPE)
+			as $$
+			BEGIN
+			UPDATE bacheca
+			SET isdefault = false
+			WHERE bacheca."Owner" LIKE proprietario AND isdefault = true;
+			
+			UPDATE bacheca
+			set isdefault = true
+			WHERE bacheca."ID" = idnewdefault;
+			
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa procedura si occupa di inserire un elemento nella tabella Placement in seguito ad una condivisione di un ToDo
+			\begin{lstlisting}
+			CREATE OR REPLACE PROCEDURE condividiTodo(utente varchar(100), idtodocondiviso int)
+			as $$
+			DECLARE
+			destination int;
+			BEGIN
+			
+			SELECT "ID" INTO destination
+			FROM bacheca
+			WHERE "Owner" LIKE utente AND isdefault = true;
+			
+			INSERT INTO placement (idbacheca, idtodo) values
+			(destination, idtodocondiviso);
+			
+			END; 
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa procedura invece si occupa di rimuovere condivisioni
+			\begin{lstlisting}
+			CREATE OR REPLACE PROCEDURE annullaCondivisioneTodo(utente varchar(100), idtodocondiviso int)
+			AS $$
+			BEGIN
+			DELETE FROM placement
+			WHERE  idbacheca IN (SELECT "ID" FROM bacheca WHERE "Owner" LIKE utente) AND idtodo = idtodocondiviso;
+			END; 
+			$$ language plpgsql
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		La seguente procedura si occupa di spostare un ToDo da una tabella all'altra
+			\begin{lstlisting}
+			CREATE OR REPLACE PROCEDURE moveTodo(todotomove int, origin int, destination int) 
+			as $$
+			BEGIN
+			UPDATE placement
+			SET idbacheca = destination
+			WHERE idtodo = todotomove AND idbacheca = origin;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa è una procedura fittizia che serve unicamente ad attivare il trigger \textit{checkExpiration} e verrà chiamata all'avvio e al refresh dell'applicazione. Viene "modificato" l'attributo completed in quanto è del tipo di dato più semplice (boolean) e quindi più leggero da maneggiare
+			\begin{lstlisting}
+			CREATE OR REPLACE PROCEDURE checkAllExpiredDates() AS $$
+			DECLARE
+			tem record;
+			BEGIN
+			FOR tem IN (SELECT * FROM todo)
+			LOOP
+			UPDATE todo 
+			SET completed = tem.completed
+			WHERE "ID"= tem."ID";
+			END LOOP;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		
+		\subsection{Trigger}
+		
+		Il seguente trigger viene chiamato ogni volta che si effettua una rimozione dalla tabella Placement
+			\begin{lstlisting}
+			CREATE OR REPLACE TRIGGER removeToDo AFTER DELETE ON placement
+			FOR EACH ROW
+			EXECUTE FUNCTION removeToDoFunction();
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questo trigger viene attivato all'inserimento di un nuovo utente nella tabella User
+			\begin{lstlisting}
+			CREATE OR REPLACE TRIGGER createDefaultBacheche AFTER INSERT ON "user"
+			FOR EACH ROW
+			EXECUTE FUNCTION createDefaultBachecheFunction();
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questo trigger si attiva all'inserimento di un Todo o ad un suo aggiornamento
+			\begin{lstlisting}
+			CREATE OR REPLACE TRIGGER checkExpiration BEFORE INSERT OR UPDATE ON todo
+			FOR EACH ROW
+			EXECUTE FUNCTION checkExpirationFunction();
+		\end{lstlisting}
+		
+		\subsection{PLSQL Functions}
+		
+		Questa funzione verifica la scadenza di un ToDo. Verrà chiamata da un apposito trigger all'inserimento/modifica di un ToDo
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION checkExpirationFunction() RETURNS TRIGGER AS $$
+			BEGIN
+			IF new.complete_by_date < current_date AND new.completed = false THEN
+			new.expired := true;
+			ELSE
+			new.expired := false;
+			END IF;
+			RETURN NEW;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione verifica, in seguito ad una rimozione di un elemento dalla tabella Placement, se l'utente ad aver rimosso il ToDo ne è il creatore. In caso affermativo, lo elimina anche dalla tabella dei ToDo
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION removeToDoFunction ()
+			RETURNS trigger
+			as $$
+			
+			DECLARE
+			temporaneo1 varchar(100);
+			temporaneo2 varchar(100);
+			
+			BEGIN
+			Select "Owner" into temporaneo1
+			From bacheca
+			where bacheca."ID" = OLD.IDBacheca;
+			
+			Select "Owner" into temporaneo2
+			From todo 
+			Where todo."ID" = OLD.IDToDo;
+			
+			IF temporaneo1 LIKE temporaneo2 THEN
+			Delete from todo where todo."ID" = OLD.IDToDo;
+			END IF;
+			RETURN OLD;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione inserisce le quattro bacheche di partenza di un utente
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION createDefaultBachecheFunction() RETURNS trigger
+			as $$
+			
+			BEGIN
+			INSERT INTO bacheca (title, description, "Owner", Format, isDefault)
+			values 
+			('Default', 'your default bacheca', new.username, 'Default', true),
+			('Università', 'your university bacheca', new.username, 'Università', false),
+			('Lavoro', 'your job bacheca', new.username, 'Lavoro', false),
+			('Tempo libero', 'your free time bacheca', new.username, 'Tempo libero', false);
+			RETURN NULL;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione restituisce gli ID dei ToDo che contengono la stringa ricercata (non case sensitive)
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION searchtodo(utente varchar(100), testo varchar(100))
+			RETURNS integer ARRAY
+			AS $$
+			
+			DECLARE
+			ret integer ARRAY;
+			tem int;
+			
+			BEGIN
+			FOR tem in 
+			SELECT todo."ID" 
+			FROM Todo JOIN placement ON Todo."ID" = placement.idtodo JOIN bacheca ON bacheca."ID" = placement.idbacheca
+			WHERE bacheca."Owner" LIKE utente AND lower(Todo.title) LIKE lower('%'||testo||'%')
+			
+			LOOP
+			ret := array_append(ret, tem);
+			END LOOP;
+			RETURN ret;
+			END;
+			$$ language plpgsql;
+		\end{lstlisting}
+		
+		\subsection{SQL Functions}
+		
+		Questa funzione restituisce una bacheca ordinata in ordine alfabetico (ascendente)
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION sortAlphabetical(bachecaToSort int) RETURNS TABLE("ID" int, title varchar(100), url varchar(256), description varchar(1000), "Owner" varchar(100), icon int, color int, complete_by_date date, completed boolean, expired boolean)
+			AS $$
+			SELECT todo."ID", todo.title, todo.url, todo.description, todo."Owner", todo.icon, todo.color, todo.complete_by_date, todo.completed, todo.expired
+			FROM placement JOIN todo ON placement.idtodo = todo."ID"
+			WHERE placement.idbacheca = bachecaToSort
+			ORDER BY todo.title ASC;
+			$$ language SQL;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione restituisce una bacheca ordinata in ordine di data di scadenza (ascendente)
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION sortByDate(bachecaToSort int) RETURNS TABLE("ID" int, title varchar(100), url varchar(256), description varchar(1000), "Owner" varchar(100), icon int, color int, complete_by_date date, completed boolean, expired boolean)
+			AS $$
+			SELECT todo."ID", todo.title, todo.url, todo.description, todo."Owner", todo.icon, todo.color, todo.complete_by_date, todo.completed, todo.expired
+			FROM placement JOIN todo ON placement.idtodo = todo."ID"
+			WHERE placement.idbacheca = bachecaToSort
+			ORDER BY todo.complete_by_date ASC;
+			$$ language SQL;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione restituisce i ToDo che scadono entro la data indicata (\textit{treshold})
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION completeBefore(utente varchar(100), treshold date) RETURNS TABLE("ID" int, title varchar(100), url varchar(256), description varchar(1000), "Owner" varchar(100), icon int, color int, complete_by_date date, completed boolean, expired boolean)
+			AS $$
+			SELECT todo."ID", todo.title, todo.url, todo.description, todo."Owner", todo.icon, todo.color, todo.complete_by_date, todo.completed, todo.expired
+			FROM placement JOIN todo ON placement.idtodo = todo."ID" JOIN bacheca ON bacheca."ID" = placement.idbacheca
+			WHERE bacheca."Owner" = utente AND todo.complete_By_Date <= treshold;
+			$$ language SQL;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione seleziona i ToDo di un utente scaduti o non scaduti a seconda del valore status (\textit{status = true $\rightarrow$ scaduti ; status = false $\rightarrow$ non scaduti})
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION selectExpired(utente varchar(100), status boolean) RETURNS TABLE("ID" int, title varchar(100), url varchar(256), description varchar(1000), "Owner" varchar(100), icon int, color int, complete_by_date date, completed boolean, expired boolean)
+			AS $$
+			SELECT todo."ID", todo.title, todo.url, todo.description, todo."Owner", todo.icon, todo.color, todo.complete_by_date, todo.completed, todo.expired
+			FROM placement JOIN todo ON placement.idtodo = todo."ID" JOIN bacheca ON placement.idbacheca = bacheca."ID"
+			WHERE bacheca."Owner" = utente AND todo.expired = status;
+			$$ language SQL;
+		\end{lstlisting}
+		\hfill \linebreak[2]
+		
+		Questa funzione seleziona i ToDo di un utente completati o non completati a seconda del valore status (\textit{status = true $\rightarrow$ completati ; status = false $\rightarrow$ non completati})
+			\begin{lstlisting}
+			CREATE OR REPLACE FUNCTION selectCompleted(utente varchar(100), status boolean) RETURNS TABLE("ID" int, title varchar(100), url varchar(256), description varchar(1000), "Owner" varchar(100), icon int, color int, complete_by_date date, completed boolean, expired boolean)
+			AS $$
+			SELECT todo."ID", todo.title, todo.url, todo.description, todo."Owner", todo.icon, todo.color, todo.complete_by_date, todo.completed, todo.expired
+			FROM placement JOIN todo ON placement.idtodo = todo."ID" JOIN bacheca ON placement.idbacheca = bacheca."ID"
+			WHERE bacheca."Owner" = utente AND todo.completed = status;
+			$$ language SQL;
+		\end{lstlisting}
+	
+\end{document}
